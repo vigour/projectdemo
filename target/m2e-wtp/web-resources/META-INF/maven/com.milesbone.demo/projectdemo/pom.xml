@@ -85,7 +85,9 @@
 		
 		
 		<!-- POI -->
-		<poi.version>3.14</poi.version>
+		<poi.version>4.1.2</poi.version>
+		
+		<jsonpath.version>2.3.0</jsonpath.version>
 	</properties>
 	<dependencies>
 		<dependency>
@@ -287,6 +289,13 @@
 	    	<groupId>org.objenesis</groupId>
 		    <artifactId>objenesis</artifactId>
 		    <version>${objenesis.version}</version>
+		</dependency>
+		
+		<!-- JSON PATH -->
+		<dependency>
+		    <groupId>com.jayway.jsonpath</groupId>
+		    <artifactId>json-path</artifactId>
+		    <version>${jsonpath.version}</version>
 		</dependency>
 	</dependencies>
 	<build>

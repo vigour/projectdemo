@@ -15,14 +15,16 @@ import java.util.List;
 
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.io.FilenameUtils;
-import org.apache.poi.hssf.usermodel.HSSFCellStyle;
-import org.apache.poi.hssf.usermodel.HSSFDateUtil;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
+import org.apache.poi.ss.usermodel.BorderStyle;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellStyle;
+import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.usermodel.CellValue;
+import org.apache.poi.ss.usermodel.DateUtil;
 import org.apache.poi.ss.usermodel.Font;
 import org.apache.poi.ss.usermodel.FormulaEvaluator;
+import org.apache.poi.ss.usermodel.HorizontalAlignment;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
@@ -78,7 +80,7 @@ public class ExcelUtil {
             wb = new HSSFWorkbook(new FileInputStream(file));
 
         } else if (ExcelVersion.V2007.getSuffix().equals(extName)) {
-            wb = new XSSFWorkbook(new FileInputStream(file));
+//            wb = new XSSFWorkbook(new FileInputStream(file));
 
         } else {
             // 无效后缀名称，这里之能保证excel的后缀名称，不能保证文件类型正确，不过没关系，在创建Workbook的时候会校验文件格式
@@ -130,40 +132,42 @@ public class ExcelUtil {
     private static Object getCellValue(Workbook wb, Cell cell) {
         Object columnValue = null;
         if (cell != null) {
-            DecimalFormat df = new DecimalFormat("0");// 格式化 number
             // String
             // 字符
             SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");// 格式化日期字符串
             DecimalFormat nf = new DecimalFormat("0.00");// 格式化数字
             switch (cell.getCellType()) {
-            case Cell.CELL_TYPE_STRING:
-                columnValue = cell.getStringCellValue();
-                break;
-            case Cell.CELL_TYPE_NUMERIC:
-                if ("@".equals(cell.getCellStyle().getDataFormatString())) {
-                    columnValue = df.format(cell.getNumericCellValue());
-                } else if ("General".equals(cell.getCellStyle().getDataFormatString())) {
-                    columnValue = nf.format(cell.getNumericCellValue());
+            case BOOLEAN:
+            	 columnValue = CellValue.valueOf(cell.getBooleanCellValue()).formatAsString();
+                 break;
+            case ERROR:
+                return CellValue.getError(cell.getErrorCellValue()).formatAsString();
+            case NUMERIC:
+                double numericCellValue = cell.getNumericCellValue();
+                if (DateUtil.isCellDateFormatted(cell)) {
+                	columnValue = DateUtil.getLocalDateTime(numericCellValue);
                 } else {
-                    columnValue = sdf.format(HSSFDateUtil.getJavaDate(cell.getNumericCellValue()));
+                	columnValue = numericCellValue;
                 }
                 break;
-            case Cell.CELL_TYPE_BOOLEAN:
-                columnValue = cell.getBooleanCellValue();
+            case STRING:
+            	columnValue = cell.getRichStringCellValue().getString();
                 break;
-            case Cell.CELL_TYPE_BLANK:
-                columnValue = "";
-                break;
-            case Cell.CELL_TYPE_FORMULA:
-                // 格式单元格
-                FormulaEvaluator evaluator = wb.getCreationHelper().createFormulaEvaluator();
-                evaluator.evaluateFormulaCell(cell);
-                CellValue cellValue = evaluator.evaluate(cell);
-                columnValue = cellValue.getNumberValue();
-                break;
+            case BLANK:
+            	 columnValue = "";
+                 break;
+            case FORMULA:
+            	FormulaEvaluator evaluator = wb.getCreationHelper().createFormulaEvaluator();
+            	CellValue cellValue = evaluator.evaluate(cell);
+    			boolean isNumeric = cellValue.getCellTypeEnum() == CellType.NUMERIC;
+    			columnValue = (isNumeric) ? cellValue.getNumberValue() : cellValue.getStringValue();
+    			if (isNumeric && columnValue.toString().equals("0.0")) {
+    				columnValue = cell.getNumericCellValue();
+    			}
+    			break; // 公式类型
             default:
-                columnValue = cell.toString();
-            }
+            	columnValue = cell.toString();
+        }
         }
         return columnValue;
     }
@@ -270,26 +274,26 @@ public class ExcelUtil {
         }
         // 生成一个样式
         CellStyle style = wb.createCellStyle();
-        style.setBorderBottom(HSSFCellStyle.BORDER_THIN);
-        style.setBorderLeft(HSSFCellStyle.BORDER_THIN);
-        style.setBorderRight(HSSFCellStyle.BORDER_THIN);
-        style.setBorderTop(HSSFCellStyle.BORDER_THIN);
+        style.setBorderBottom(BorderStyle.THIN);
+        style.setBorderLeft(BorderStyle.THIN);
+        style.setBorderRight(BorderStyle.THIN);
+        style.setBorderTop(BorderStyle.THIN);
         style.setWrapText(true);
 
         if (STYLE_HEADER == type) {
-            style.setAlignment(HSSFCellStyle.ALIGN_CENTER);
+            style.setAlignment(HorizontalAlignment.CENTER);
             Font font = wb.createFont();
             font.setFontHeightInPoints((short) 16);
-            font.setBoldweight(Font.BOLDWEIGHT_BOLD);
+            font.setBold(true);
             style.setFont(font);
         } else if (STYLE_TITLE == type) {
-            style.setAlignment(HSSFCellStyle.ALIGN_CENTER);
+            style.setAlignment(HorizontalAlignment.CENTER);
             Font font = wb.createFont();
             font.setFontHeightInPoints((short) 18);
-            font.setBoldweight(Font.BOLDWEIGHT_BOLD);
+            font.setBold(true);
             style.setFont(font);
         } else if (STYLE_DATA == type) {
-            style.setAlignment(HSSFCellStyle.ALIGN_LEFT);
+            style.setAlignment(HorizontalAlignment.CENTER);
             Font font = wb.createFont();
             font.setFontHeightInPoints((short) 12);
             style.setFont(font);

@@ -50,7 +50,7 @@ import org.apache.http.util.EntityUtils;
 import com.alibaba.fastjson.JSONObject;
 import com.milesbone.util.MACUtil;
 
-public class HttpClientUtil {
+public class HttpClientAdvertiseUtil {
 	 static final int timeOut = 50 * 1000;
 	 
 	 
@@ -64,7 +64,8 @@ public class HttpClientUtil {
 
 	    private static final String SCORE_URL_ZZ = "http://openapi02.logs.ptsharp.gitv.tv/apiscore/uploadmoviescore";
 	    
-	    private static final String ADV_URL = "http://testbed02.flnettv.com/apiquery/get-task-list?mac=70:20:84:A6:ED:E8&ad_app_code=APP1802&adui_code=AU1806&wifi_mac=24:31:84:65:32:3C&taskIds=";
+	    private static final String ADV_URL = "http://testbed02.flnettv.com/apiquery/get-task-list";
+	    private static final String ADV_LOCAL_URL = "http://127.0.0.1:8180/COM.FOXCONN.API.QUERY/advtasklist";
 
 	    private static void config(HttpRequestBase httpRequestBase) {
 	        // 设置Header等
@@ -261,10 +262,8 @@ public class HttpClientUtil {
 
 	    public static void main(String[] args) {
 	    	String[] urisToPost = {
-	    			SCORE_URL,
-	    			SCORE_URL_ZZ,
-	    			SCORE_URL,
-	    			SCORE_URL_ZZ
+	    			ADV_LOCAL_URL
+//	    			ADV_URL
 	    	};
 	        // URL列表数组
 //	        String[] urisToGet = {
@@ -313,23 +312,27 @@ public class HttpClientUtil {
 	            Map<String, Object> params = new HashMap<String, Object>();
 	            MACUtil mac = new MACUtil();
 	            Random random = new Random();
-	            for (int i = 0; i < pagecount; i++) {
-	            	for(int len = 0; len < urisToPost.length; len++) {
-	//	                HttpPost httppost = new HttpPost();
-	//	                config(httppost);
-		            	params = new HashMap<String, Object>();
-		                params.put("site", 0);
-		                params.put("channel", "FXN");
-		                params.put("mac", mac.randomMac());
-		                params.put("uuid", (UUID.randomUUID().toString()).replaceAll("-", ""));
-		                params.put("score", random.nextInt(5));
-		                params.put("vid", random.nextInt(500));
-		                // 启动线程抓取
-		                executors.execute(new PostRunnable(urisToPost[len], params, countDownLatch));
-		            }
+	            for(int j = 0;j<5; j++) {
+		            for (int i = 0; i < pagecount; i++) {
+		            	for(int len = 0; len < urisToPost.length; len++) {
+		//	                HttpPost httppost = new HttpPost();
+		//	                config(httppost);
+		            		
+		            		//?mac=70:20:84:A6:ED:E8&ad_app_code=APP1802&adui_code=AU1806&wifi_mac=24:31:84:65:32:3C&taskIds=
+			            	params = new HashMap<String, Object>();
+			                params.put("ad_app_code", "APP1802");
+			                params.put("adui_code", "AU1806");
+			                params.put("mac", mac.randomMac());
+			                params.put("wifi_mac", mac.randomMac());
+			                params.put("model", "LCD");
+	//		                params.put("taskIds", "72_118");
+			                // 启动线程抓取
+			                executors.execute(new PostRunnable(urisToPost[len], params, countDownLatch));
+			            }
 	            }
 	            countDownLatch.await();
 	            executors.shutdown();
+	            }
 	        } catch (InterruptedException e) {
 	            e.printStackTrace();
 	        } finally {
@@ -341,7 +344,7 @@ public class HttpClientUtil {
 	        System.out.println("consume -> " + (end - start)/1000 +"s");
 	        
 	        try {
-				Thread.sleep(100000);
+				Thread.sleep(10000);
 				System.out.println("Done!");
 			} catch (InterruptedException e) {
 				e.printStackTrace();
@@ -360,7 +363,7 @@ public class HttpClientUtil {
 	        @Override
 	        public void run() {
 	            try {
-	                System.out.println(HttpClientUtil.get(url));
+	                System.out.println(HttpClientAdvertiseUtil.get(url));
 	            } finally {
 	                countDownLatch.countDown();
 	            }
@@ -382,7 +385,7 @@ public class HttpClientUtil {
 	        @Override
 	        public void run() {
 	            try {
-	            	String ret = HttpClientUtil.post(url, params);
+	            	String ret = HttpClientAdvertiseUtil.post(url, params);
 	            	System.out.println(params.toString());
 	                JSONObject jsonRet = JSONObject.parseObject(ret);
 	                System.out.println(jsonRet.toJSONString());
