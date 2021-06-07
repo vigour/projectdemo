@@ -60,7 +60,7 @@
 
 
 		<!-- logback Dependency -->
-		<logback.version>1.0.13</logback.version>
+		<logback.version>1.2.0</logback.version>
 	
 		<!-- struts2 dependency -->
 		<struts.version>2.3.34</struts.version>
